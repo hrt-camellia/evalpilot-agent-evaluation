@@ -1,0 +1,127 @@
+[
+  {
+    "id": "demo-discount",
+    "name": "实现订单折扣计算函数",
+    "task_type": "代码生成",
+    "difficulty": "简单",
+    "language": "python",
+    "prompt": "在 solution.py 中实现函数 calculate_discount(price, member_level, campaign=False)。\n\n规则：\n- price 必须为非负数，否则抛出 ValueError；\n- member_level 仅允许 normal、silver、gold；\n- normal 折扣系数 1.0，silver 0.95，gold 0.90；\n- campaign=True 时，在会员折扣后再乘 0.90；\n- 最终结果四舍五入保留两位小数。",
+    "expected": "函数签名保持不变，正确处理会员等级、活动叠加、非法金额和非法等级。",
+    "required_terms": [
+      "def calculate_discount",
+      "ValueError",
+      "round"
+    ],
+    "test_code": "import unittest\nfrom solution import calculate_discount\n\nclass TestDiscount(unittest.TestCase):\n    def test_normal(self):\n        self.assertEqual(calculate_discount(100, \"normal\"), 100.00)\n\n    def test_silver(self):\n        self.assertEqual(calculate_discount(100, \"silver\"), 95.00)\n\n    def test_gold_campaign(self):\n        self.assertEqual(calculate_discount(100, \"gold\", True), 81.00)\n\n    def test_rounding(self):\n        self.assertEqual(calculate_discount(99.99, \"silver\"), 94.99)\n\n    def test_negative(self):\n        with self.assertRaises(ValueError):\n            calculate_discount(-1, \"normal\")\n\n    def test_invalid_level(self):\n        with self.assertRaises(ValueError):\n            calculate_discount(100, \"vip\")\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+    "timeout_seconds": 8,
+    "tags": [
+      "Python",
+      "业务逻辑",
+      "边界条件"
+    ]
+  },
+  {
+    "id": "demo-dedupe",
+    "name": "修复订单去重逻辑",
+    "task_type": "Bug 修复",
+    "difficulty": "中等",
+    "language": "python",
+    "prompt": "实现函数 deduplicate_orders(orders)。\n\norders 是字典列表，每条至少包含 id 和 updated_at。要求：\n- 同一 id 只保留 updated_at 最大的一条；\n- 输入顺序不稳定；\n- 输出按 id 字符串升序排列；\n- 不得修改输入列表及其中字典；\n- 空列表返回空列表。",
+    "expected": "正确去重、排序，并避免原地修改输入对象。",
+    "required_terms": [
+      "def deduplicate_orders",
+      "sorted"
+    ],
+    "test_code": "import unittest\nimport copy\nfrom solution import deduplicate_orders\n\nclass TestDedupe(unittest.TestCase):\n    def test_empty(self):\n        self.assertEqual(deduplicate_orders([]), [])\n\n    def test_keep_latest_and_sort(self):\n        rows = [\n            {\"id\": \"b\", \"updated_at\": 2, \"value\": \"new-b\"},\n            {\"id\": \"a\", \"updated_at\": 3, \"value\": \"new-a\"},\n            {\"id\": \"b\", \"updated_at\": 1, \"value\": \"old-b\"},\n            {\"id\": \"a\", \"updated_at\": 1, \"value\": \"old-a\"},\n        ]\n        result = deduplicate_orders(rows)\n        self.assertEqual([x[\"id\"] for x in result], [\"a\", \"b\"])\n        self.assertEqual(result[0][\"value\"], \"new-a\")\n        self.assertEqual(result[1][\"value\"], \"new-b\")\n\n    def test_no_mutation(self):\n        rows = [{\"id\": \"a\", \"updated_at\": 1, \"value\": []}]\n        before = copy.deepcopy(rows)\n        result = deduplicate_orders(rows)\n        self.assertEqual(rows, before)\n        self.assertIsNot(result[0], rows[0])\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+    "timeout_seconds": 8,
+    "tags": [
+      "Python",
+      "Bug 修复",
+      "不可变性"
+    ]
+  },
+  {
+    "id": "demo-rate-limit",
+    "name": "实现滑动窗口限流器",
+    "task_type": "代码生成",
+    "difficulty": "困难",
+    "language": "python",
+    "prompt": "实现类 SlidingWindowRateLimiter(limit, window_seconds)。\n\n方法 allow(user_id, timestamp) -> bool：\n- timestamp 为秒级数值；\n- 对每个 user_id 独立限流；\n- 仅统计区间 (timestamp-window_seconds, timestamp] 内已放行请求；\n- 未达到 limit 时放行并记录，达到时拒绝且不记录；\n- 同一用户传入 timestamp 必须非递减，否则抛出 ValueError；\n- limit 和 window_seconds 必须为正数。",
+    "expected": "按用户隔离、边界正确、拒绝请求不入窗，并校验时间单调性。",
+    "required_terms": [
+      "class SlidingWindowRateLimiter",
+      "def allow",
+      "ValueError"
+    ],
+    "test_code": "import unittest\nfrom solution import SlidingWindowRateLimiter\n\nclass TestLimiter(unittest.TestCase):\n    def test_basic(self):\n        limiter = SlidingWindowRateLimiter(2, 10)\n        self.assertTrue(limiter.allow(\"u\", 1))\n        self.assertTrue(limiter.allow(\"u\", 2))\n        self.assertFalse(limiter.allow(\"u\", 3))\n        self.assertTrue(limiter.allow(\"u\", 12))\n\n    def test_user_isolation(self):\n        limiter = SlidingWindowRateLimiter(1, 10)\n        self.assertTrue(limiter.allow(\"a\", 1))\n        self.assertTrue(limiter.allow(\"b\", 1))\n        self.assertFalse(limiter.allow(\"a\", 2))\n\n    def test_left_boundary_open(self):\n        limiter = SlidingWindowRateLimiter(1, 10)\n        self.assertTrue(limiter.allow(\"u\", 1))\n        self.assertTrue(limiter.allow(\"u\", 11))\n\n    def test_rejected_not_recorded(self):\n        limiter = SlidingWindowRateLimiter(1, 10)\n        self.assertTrue(limiter.allow(\"u\", 1))\n        self.assertFalse(limiter.allow(\"u\", 2))\n        self.assertTrue(limiter.allow(\"u\", 11))\n\n    def test_non_monotonic(self):\n        limiter = SlidingWindowRateLimiter(2, 10)\n        limiter.allow(\"u\", 2)\n        with self.assertRaises(ValueError):\n            limiter.allow(\"u\", 1)\n\n    def test_invalid_init(self):\n        with self.assertRaises(ValueError):\n            SlidingWindowRateLimiter(0, 10)\n        with self.assertRaises(ValueError):\n            SlidingWindowRateLimiter(1, 0)\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+    "timeout_seconds": 8,
+    "tags": [
+      "Python",
+      "数据结构",
+      "边界条件"
+    ]
+  },
+  {
+    "id": "demo-version-compare",
+    "name": "实现语义版本比较函数",
+    "task_type": "代码生成",
+    "difficulty": "中等",
+    "language": "python",
+    "prompt": "实现 compare_versions(a, b) -> int。\n\n输入为仅包含非负整数段的版本号，例如 \"1.2.0\"。\n要求：\n- a>b 返回 1，a<b 返回 -1，相等返回 0；\n- 末尾缺失段视为 0，因此 1.0 与 1.0.0 相等；\n- 非法输入（空字符串、负数、字母、连续点）抛出 ValueError；\n- 不使用第三方库。",
+    "expected": "正确处理不同段数、前导零、相等版本及非法输入。",
+    "required_terms": [
+      "def compare_versions",
+      "ValueError",
+      "split"
+    ],
+    "test_code": "import unittest\nfrom solution import compare_versions\n\nclass TestVersions(unittest.TestCase):\n    def test_basic(self):\n        self.assertEqual(compare_versions(\"1.2.0\", \"1.1.9\"), 1)\n        self.assertEqual(compare_versions(\"1.0\", \"1.0.0\"), 0)\n        self.assertEqual(compare_versions(\"2.0\", \"10.0\"), -1)\n\n    def test_leading_zero(self):\n        self.assertEqual(compare_versions(\"01.002\", \"1.2.0\"), 0)\n\n    def test_invalid(self):\n        for value in [\"\", \"1..2\", \"1.a\", \"-1.0\", \".1\", \"1.\"]:\n            with self.assertRaises(ValueError):\n                compare_versions(value, \"1.0\")\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+    "timeout_seconds": 8,
+    "tags": [
+      "Python",
+      "字符串解析",
+      "边界条件"
+    ]
+  },
+  {
+    "id": "demo-deep-merge",
+    "name": "实现不可变嵌套配置合并",
+    "task_type": "Bug 修复",
+    "difficulty": "中等",
+    "language": "python",
+    "prompt": "实现 deep_merge(base, override)。\n\n规则：\n- 两个输入均为字典；\n- 当两侧同名值均为字典时递归合并；\n- 其他情况由 override 覆盖；\n- 返回全新的结果，不能修改输入，也不能复用输入中的可变字典或列表；\n- 不允许使用第三方库。",
+    "expected": "递归合并正确，且结果与两个输入之间不存在可变对象共享。",
+    "required_terms": [
+      "def deep_merge",
+      "dict"
+    ],
+    "test_code": "import unittest\nfrom solution import deep_merge\n\nclass TestMerge(unittest.TestCase):\n    def test_recursive(self):\n        base = {\"db\": {\"host\": \"a\", \"ports\": [1]}, \"debug\": False}\n        override = {\"db\": {\"host\": \"b\"}, \"debug\": True}\n        result = deep_merge(base, override)\n        self.assertEqual(result, {\"db\": {\"host\": \"b\", \"ports\": [1]}, \"debug\": True})\n\n    def test_no_mutation_or_sharing(self):\n        base = {\"x\": {\"items\": [1, 2]}}\n        override = {\"y\": {\"items\": [3]}}\n        result = deep_merge(base, override)\n        result[\"x\"][\"items\"].append(9)\n        result[\"y\"][\"items\"].append(8)\n        self.assertEqual(base, {\"x\": {\"items\": [1, 2]}})\n        self.assertEqual(override, {\"y\": {\"items\": [3]}})\n\n    def test_override_scalar(self):\n        self.assertEqual(deep_merge({\"a\": {\"x\": 1}}, {\"a\": 2}), {\"a\": 2})\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+    "timeout_seconds": 8,
+    "tags": [
+      "Python",
+      "递归",
+      "不可变性"
+    ]
+  },
+  {
+    "id": "demo-lru-cache",
+    "name": "实现固定容量 LRU 缓存",
+    "task_type": "代码生成",
+    "difficulty": "困难",
+    "language": "python",
+    "prompt": "实现类 LRUCache(capacity)。\n\n提供 get(key) 和 put(key, value)：\n- get 不存在时返回 -1；\n- get 成功后该键变为最近使用；\n- put 已存在键时更新并变为最近使用；\n- 超出容量时淘汰最久未使用键；\n- capacity 必须为正整数，否则抛出 ValueError；\n- 目标是 get/put 平均 O(1)。可使用 Python 标准库。",
+    "expected": "遵循标准 LRU 行为，更新已有键不错误淘汰，容量校验正确。",
+    "required_terms": [
+      "class LRUCache",
+      "def get",
+      "def put",
+      "ValueError"
+    ],
+    "test_code": "import unittest\nfrom solution import LRUCache\n\nclass TestLRU(unittest.TestCase):\n    def test_standard(self):\n        c = LRUCache(2)\n        c.put(1, 1)\n        c.put(2, 2)\n        self.assertEqual(c.get(1), 1)\n        c.put(3, 3)\n        self.assertEqual(c.get(2), -1)\n        c.put(4, 4)\n        self.assertEqual(c.get(1), -1)\n        self.assertEqual(c.get(3), 3)\n        self.assertEqual(c.get(4), 4)\n\n    def test_update_existing(self):\n        c = LRUCache(2)\n        c.put(\"a\", 1)\n        c.put(\"b\", 2)\n        c.put(\"a\", 9)\n        c.put(\"c\", 3)\n        self.assertEqual(c.get(\"a\"), 9)\n        self.assertEqual(c.get(\"b\"), -1)\n\n    def test_invalid_capacity(self):\n        for value in [0, -1, 1.5, \"2\"]:\n            with self.assertRaises(ValueError):\n                LRUCache(value)\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+    "timeout_seconds": 8,
+    "tags": [
+      "Python",
+      "数据结构",
+      "复杂度"
+    ]
+  }
+]

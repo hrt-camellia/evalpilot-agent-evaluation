@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EvalPilot · 真实 Agent 评测</title>
+<style>
+:root{--bg:#f5f7fb;--panel:#fff;--text:#14213d;--muted:#64748b;--line:#e2e8f0;--brand:#4f46e5;--soft:#eef2ff;--good:#059669;--warn:#d97706;--bad:#dc2626;--shadow:0 14px 40px rgba(15,23,42,.08);--radius:18px}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:linear-gradient(180deg,#eef2ff 0,var(--bg) 260px)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+aside{position:sticky;top:0;height:100vh;background:rgba(255,255,255,.92);border-right:1px solid var(--line);padding:24px 18px;backdrop-filter:blur(12px)}
+.brand{display:flex;gap:12px;align-items:center;padding:0 8px 26px}.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:white;font-weight:900;background:linear-gradient(135deg,#4f46e5,#7c3aed)}.brand h1{font-size:19px;margin:0}.brand p{font-size:11px;color:var(--muted);margin:3px 0 0}
+nav{display:grid;gap:8px}nav button{border:0;background:transparent;padding:12px 14px;border-radius:12px;text-align:left;color:var(--muted);font-weight:700}nav button.active{background:var(--soft);color:var(--brand)}
+.safety{position:absolute;left:18px;right:18px;bottom:20px;padding:14px;border:1px solid #fed7aa;background:#fff7ed;border-radius:14px;font-size:11px;line-height:1.6;color:#9a3412}
+main{padding:28px 34px 48px;min-width:0}.page{display:none}.page.active{display:block}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);font-weight:900}.top h2{margin:7px 0 5px;font-size:30px;letter-spacing:-.04em}.top p{margin:0;color:var(--muted);line-height:1.6}
+.actions{display:flex;gap:9px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:white;border-radius:11px;padding:10px 13px;font-weight:750;color:var(--text)}.btn.primary{background:var(--brand);border-color:var(--brand);color:white}.btn.danger{color:var(--bad)}.btn.small{padding:7px 9px;font-size:12px}
+.grid{display:grid;gap:16px}.grid.two{grid-template-columns:1fr 1fr}.grid.kpi{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:var(--panel);border:1px solid rgba(226,232,240,.9);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;min-width:0}.card h3{margin:0;font-size:16px}.sub{color:var(--muted);font-size:12px;margin-top:5px;line-height:1.6}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:11px;color:var(--muted);font-weight:800}.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--text);outline:none}.field textarea{min-height:92px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#a5b4fc;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.notice{border:1px solid #c7d2fe;background:linear-gradient(135deg,#eef2ff,#faf5ff);padding:14px;border-radius:13px;font-size:13px;line-height:1.7}.status{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:850;background:#ecfdf5;color:var(--good)}.status.warn{background:#fff7ed;color:var(--warn)}.status.bad{background:#fef2f2;color:var(--bad)}
+.table{overflow:auto;margin-top:14px}table{width:100%;border-collapse:collapse;min-width:840px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:top}th{color:var(--muted);background:#fbfdff}.tag{display:inline-flex;padding:4px 7px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:750;margin:2px 3px 2px 0}
+.kpi .card{padding:17px}.klabel{font-size:12px;color:var(--muted);font-weight:750}.kvalue{font-size:28px;font-weight:900;margin-top:10px;letter-spacing:-.04em}.kfoot{font-size:11px;color:var(--muted);margin-top:7px}
+.progress{height:10px;background:#e9edf5;border-radius:999px;overflow:hidden;margin-top:13px}.progress>div{height:100%;background:linear-gradient(90deg,#4f46e5,#8b5cf6);width:0;transition:.3s}
+.result-card{border:1px solid var(--line);border-radius:14px;padding:15px;margin-top:12px}.result-head{display:flex;justify-content:space-between;gap:12px}.scores{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px}.score{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fbfdff}.score span{font-size:10px;color:var(--muted)}.score strong{display:block;font-size:17px;margin-top:5px}.code{white-space:pre-wrap;word-break:break-word;background:#0f172a;color:#e2e8f0;padding:14px;border-radius:12px;max-height:300px;overflow:auto;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}
+.report{white-space:pre-wrap;background:#fbfdff;border:1px solid var(--line);border-radius:14px;padding:18px;line-height:1.75;max-height:680px;overflow:auto;font-size:13px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:20;align-items:center;justify-content:center;padding:20px}.modal-bg.show{display:flex}.modal{width:min(760px,100%);max-height:90vh;overflow:auto;background:white;border-radius:20px;padding:22px;box-shadow:0 30px 90px rgba(15,23,42,.28)}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal-head h3{margin:0}.close{border:0;background:#f1f5f9;border-radius:9px;width:34px;height:34px}
+.toast{position:fixed;right:22px;bottom:22px;background:#0f172a;color:white;padding:11px 15px;border-radius:11px;font-size:12px;opacity:0;transform:translateY(8px);transition:.2s;z-index:30}.toast.show{opacity:1;transform:translateY(0)}
+details{margin-top:12px}summary{cursor:pointer;font-weight:750;font-size:12px;color:var(--brand)}
+@media(max-width:1050px){.app{grid-template-columns:88px 1fr}.brand-copy,.nav-label,.safety{display:none}.brand{justify-content:center}.grid.kpi{grid-template-columns:repeat(2,1fr)}.grid.two{grid-template-columns:1fr}.scores{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){.app{display:block}aside{position:fixed;z-index:10;left:0;right:0;top:auto;bottom:0;height:70px;border-right:0;border-top:1px solid var(--line);padding:7px 9px}.brand{display:none}nav{grid-template-columns:repeat(4,1fr)}nav button{text-align:center;padding:8px 3px;font-size:10px}.nav-label{display:block}main{padding:22px 15px 95px}.top{display:block}.actions{margin-top:13px}.grid.kpi{grid-template-columns:1fr}.form{grid-template-columns:1fr}.field.full{grid-column:auto}.scores{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><div class="logo">EP</div><div class="brand-copy"><h1>EvalPilot</h1><p>Structured-repair Evaluation v0.7</p></div></div>
+  <nav>
+    <button class="active" data-page="setup">⚙ <span class="nav-label">模型配置</span></button>
+    <button data-page="tasks">▦ <span class="nav-label">真实任务集</span></button>
+    <button data-page="run">▶ <span class="nav-label">运行评测</span></button>
+    <button data-page="results">▤ <span class="nav-label">结果与报告</span></button>
+  </nav>
+  <div class="safety"><strong>执行安全：</strong><br>Docker 模式更适合运行模型生成代码。本地模式仅用于你信任的任务和输出。</div>
+</aside>
+<main>
+<section id="setup" class="page active">
+<header class="top"><div><div class="eyebrow">Provider setup</div><h2>连接真实模型</h2><p>分别配置 Agent A、Agent B 与可选 Judge。已加入主流国内外模型服务商与本地模型预设；API Key 不会写入评测记录。</p></div><div class="actions"><button class="btn" id="healthBtn">检查运行环境</button><button class="btn primary" data-jump="run">进入评测</button></div></header>
+<div class="grid two">
+  <div class="card provider-card" data-prefix="a"><h3>Agent A</h3><div class="sub">基线模型或旧版本</div><div class="provider-form"></div><div class="actions" style="margin-top:14px"><button class="btn small test-provider">测试连接</button></div></div>
+  <div class="card provider-card" data-prefix="b"><h3>Agent B</h3><div class="sub">候选模型或新版本</div><div class="provider-form"></div><div class="actions" style="margin-top:14px"><button class="btn small test-provider">测试连接</button></div></div>
+</div>
+<div class="card" style="margin-top:16px">
+  <h3>LLM Judge（可选）</h3><div class="sub">不配置时，系统仅使用单元测试、必要词命中、输出结构和时延评分；配置后增加语义评测与失败归因。</div>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px"><input type="checkbox" id="judgeEnabled"> 启用 Judge</label>
+  <div id="judgeWrap" style="display:none"><div class="provider-card" data-prefix="j"><div class="provider-form"></div><div class="actions" style="margin-top:14px"><button class="btn small test-provider">测试连接</button></div></div></div>
+</div>
+<div class="notice" style="margin-top:16px"><strong>本轮唯一目标：</strong>得到第一份客观有效的真实对比报告。若A/B测试用例通过率均为0，系统会标记“可复核共同失败”，不再给出灰度建议。</div>
+<div class="card" style="margin-top:16px">
+<h3>无 API Key：使用 Ollama 本地模型</h3>
+<div class="sub">安装 Ollama 后，在 PowerShell 分别拉取两个代码模型，再点击下方按钮自动填入已安装模型。</div>
+<div class="code" style="margin-top:12px;max-height:none">ollama pull deepseek-coder:1.3b
+ollama pull qwen2.5-coder:3b</div>
+<div class="actions" style="margin-top:12px"><button class="btn" id="detectOllama">检测并填入本地模型</button><span class="sub" id="ollamaResult"></span></div>
+</div>
+</section>
+
+<section id="tasks" class="page">
+<header class="top"><div><div class="eyebrow">Evaluation suite</div><h2>真实任务集</h2><p>任务包含明确成功标准、必要约束和可执行 Python 单元测试。</p></div><div class="actions"><button class="btn primary" id="addTaskBtn">新增任务</button></div></header>
+<div class="card"><div class="table"><table><thead><tr><th>选择</th><th>任务</th><th>类型</th><th>难度</th><th>自动测试</th><th>标签</th><th>操作</th></tr></thead><tbody id="taskBody"></tbody></table></div></div>
+</section>
+
+<section id="run" class="page">
+<header class="top"><div><div class="eyebrow">Batch evaluation</div><h2>运行真实对比评测</h2><p>本版修复“测试通过率0%仍给出60分和灰度建议”的问题，以测试用例通过率、可评测输出率和具体失败为主要结论。</p></div></header>
+<div class="grid two">
+<div class="card">
+<h3>运行设置</h3>
+<div class="form">
+<div class="field full"><label>评测名称</label><input id="runName" value="AI Coding Agent 可复核对比评测"></div>
+<div class="field"><label>代码执行模式</label><select id="executionMode"><option value="local" selected>受限本地执行</option><option value="docker">Docker 沙箱（更安全）</option><option value="disabled">不执行代码（仅演示）</option></select></div>
+<div class="field"><label>每任务重复次数</label><select id="repeatCount"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div><div class="field"><label>标准化修复</label><select id="repairAttempts"><option value="0">关闭</option><option value="1" selected>语法失败时修复1次</option></select></div><div class="field"><label>任务并行数</label><select id="parallelism"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+</div>
+<div class="notice" style="margin-top:14px" id="selectionSummary">正在读取任务……</div><div class="notice" style="margin-top:12px" id="evidenceChecklist"></div>
+<div class="actions" style="margin-top:16px"><button class="btn primary" id="startRunBtn">开始真实评测</button></div>
+</div>
+<div class="card">
+<h3>运行状态</h3><div class="sub">评测在后端异步执行，页面会自动轮询进度。</div>
+<div style="margin-top:18px"><span class="status warn" id="runStatus">尚未开始</span></div>
+<div class="progress"><div id="progressBar"></div></div>
+<div class="sub" id="progressText" style="margin-top:9px">0 / 0 次任务重复</div>
+<div id="runError" class="notice" style="display:none;margin-top:14px;border-color:#fecaca;background:#fef2f2;color:#991b1b"></div>
+</div>
+</div>
+</section>
+
+<section id="results" class="page">
+<header class="top"><div><div class="eyebrow">Results & report</div><h2>评测结果与上线判断</h2><p>查看实际输出、单元测试、六维评分、失败归因和自动生成报告。</p></div><div class="actions"><select id="runSelect" class="btn"></select><button class="btn" id="refreshRuns">刷新</button><button class="btn primary" id="downloadReport">导出报告</button></div></header>
+<div class="grid kpi">
+<div class="card"><div class="klabel">Agent A 辅助分</div><div class="kvalue" id="avgA">—</div><div class="kfoot" id="labelA">—</div></div>
+<div class="card"><div class="klabel">Agent B 辅助分</div><div class="kvalue" id="avgB">—</div><div class="kfoot" id="labelB">—</div></div>
+<div class="card"><div class="klabel">B-A 可比较分</div><div class="kvalue" id="avgDelta">—</div><div class="kfoot">加权六维综合得分</div></div>
+<div class="card"><div class="klabel">证据等级</div><div class="kvalue" style="font-size:18px" id="evidenceLevel">—</div><div class="kfoot" id="advice">需结合证据条件判断</div></div>
+</div>
+<div class="grid two" style="margin-top:16px">
+<div class="card"><h3>逐任务结果</h3><div class="sub">展开查看模型输出、测试日志和评测证据。</div><div id="resultList"></div></div>
+<div class="card"><h3>Markdown 报告</h3><div class="sub">可用于作品集、GitHub README 或面试演示。</div><div class="report" id="reportText">暂无已完成评测。</div></div>
+</div>
+</section>
+</main>
+</div>
+
+<div class="modal-bg" id="taskModal"><div class="modal">
+<div class="modal-head"><h3>新增真实评测任务</h3><button class="close" data-close="taskModal">×</button></div>
+<div class="form">
+<div class="field full"><label>任务名称</label><input id="tName"></div>
+<div class="field"><label>任务类型</label><select id="tType"><option>代码生成</option><option>Bug 修复</option><option>单元测试</option><option>代码重构</option><option>代码解释</option><option>多文件任务</option></select></div>
+<div class="field"><label>难度</label><select id="tDifficulty"><option>简单</option><option selected>中等</option><option>困难</option></select></div>
+<div class="field full"><label>需求描述</label><textarea id="tPrompt"></textarea></div>
+<div class="field full"><label>成功标准</label><textarea id="tExpected"></textarea></div>
+<div class="field full"><label>必要词（逗号分隔）</label><input id="tTerms"></div>
+<div class="field full"><label>Python unittest 代码</label><textarea id="tTests" style="min-height:210px"></textarea></div>
+<div class="field full"><label>标签（逗号分隔）</label><input id="tTags"></div>
+</div>
+<div class="actions" style="justify-content:flex-end;margin-top:16px"><button class="btn" data-close="taskModal">取消</button><button class="btn primary" id="createTaskBtn">创建</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let tasks=[],selectedIds=new Set(),currentRunId="",pollTimer=null,currentRun=null;
+const providerPresets={
+mock:{name:"Mock（流程测试）",base:"",model:"mock-model",temp:.2,key:false},
+openai:{name:"OpenAI",base:"https://api.openai.com/v1",model:"",temp:.2,key:true},
+anthropic:{name:"Anthropic Claude",base:"https://api.anthropic.com",model:"",temp:.2,key:true},
+google_gemini:{name:"Google Gemini",base:"https://generativelanguage.googleapis.com/v1beta/openai",model:"",temp:.2,key:true},
+deepseek:{name:"DeepSeek",base:"https://api.deepseek.com",model:"",temp:.2,key:true},
+xai:{name:"xAI Grok",base:"https://api.x.ai/v1",model:"",temp:.2,key:true},
+qwen_dashscope:{name:"阿里云百炼 / Qwen",base:"https://dashscope.aliyuncs.com/compatible-mode/v1",model:"",temp:.2,key:true},
+kimi:{name:"Moonshot / Kimi",base:"https://api.moonshot.cn/v1",model:"",temp:"",key:true},
+zhipu_glm:{name:"智谱 GLM",base:"https://open.bigmodel.cn/api/paas/v4",model:"",temp:.2,key:true},
+minimax:{name:"MiniMax",base:"https://api.minimaxi.com/v1",model:"",temp:1,key:true},
+volcengine_ark:{name:"火山方舟 / 豆包",base:"https://ark.cn-beijing.volces.com/api/v3",model:"",temp:.2,key:true},
+baidu_qianfan:{name:"百度千帆 / ERNIE",base:"https://qianfan.baidubce.com/v2",model:"",temp:.2,key:true},
+tencent_hunyuan:{name:"腾讯混元",base:"https://api.hunyuan.cloud.tencent.com/v1",model:"",temp:.2,key:true},
+openrouter:{name:"OpenRouter（多模型聚合）",base:"https://openrouter.ai/api/v1",model:"",temp:.2,key:true},
+siliconflow:{name:"硅基流动 SiliconFlow",base:"https://api.siliconflow.cn/v1",model:"",temp:.2,key:true},
+ollama:{name:"Ollama（本地）",base:"http://localhost:11434/v1",model:"",temp:.2,key:false},
+lm_studio:{name:"LM Studio（本地）",base:"http://localhost:1234/v1",model:"",temp:.2,key:false},
+custom_openai:{name:"自定义 OpenAI-compatible",base:"http://localhost:11434/v1",model:"",temp:.2,key:true}
+};
+const providerOptions=Object.entries(providerPresets).map(([id,x])=>`<option value="${id}">${x.name}</option>`).join("");
+const providerTemplate=p=>`
+<div class="form">
+<div class="field"><label>模型服务商 / API</label><select id="${p}Provider">${providerOptions}</select></div>
+<div class="field"><label>Agent / 版本标签</label><input id="${p}Label" placeholder="例如 Baseline / Candidate"></div>
+<div class="field full"><label>模型名称</label><input id="${p}Model" list="${p}ModelList" value="mock-model" placeholder="填写账户可用模型 ID"><datalist id="${p}ModelList"></datalist></div>
+<div class="field full"><label>API Key</label><input id="${p}Key" type="password" autocomplete="off" placeholder="本地 Ollama / LM Studio 可留空"></div>
+<div class="field full"><label>Base URL</label><input id="${p}Base" placeholder="选择服务商后自动填写；地域或工作空间不同可修改"></div>
+<div class="field"><label>最大输出 Token</label><input id="${p}Tokens" type="number" value="512" min="128" max="16000"></div>
+<div class="field"><label>Temperature（可留空）</label><input id="${p}Temp" type="number" value="0.0" min="0" max="2" step="0.1"></div>
+</div>
+<div class="actions" style="margin-top:10px"><button class="btn small load-models" type="button">读取模型列表</button><span class="sub provider-hint"></span></div>`;
+$$(".provider-card").forEach(card=>{const f=card.querySelector(".provider-form");if(f)f.innerHTML=providerTemplate(card.dataset.prefix)});
+function providerConfig(p){const temp=$(`#${p}Temp`).value.trim();return{provider:$(`#${p}Provider`).value,model:$(`#${p}Model`).value.trim(),api_key:$(`#${p}Key`).value,base_url:$(`#${p}Base`).value.trim(),max_output_tokens:Number($(`#${p}Tokens`).value||1800),temperature:temp===""?null:Number(temp),label:$(`#${p}Label`).value.trim()}}
+function syncProvider(p,force=true){const id=$(`#${p}Provider`).value,x=providerPresets[id];if(force||!$(`#${p}Base`).value)$(`#${p}Base`).value=x.base;if(force||!$(`#${p}Model`).value)$(`#${p}Model`).value=x.model;if(force)$(`#${p}Temp`).value=x.temp;const hint=$(`#${p}Provider`).closest(".provider-card")?.querySelector(".provider-hint");if(hint)hint.textContent=x.key?"需要平台 API Key":"无需云端 API Key；需先启动本地服务"} 
+["a","b","j"].forEach(p=>{$(`#${p}Provider`).onchange=()=>{syncProvider(p,true);updateEvidenceChecklist()};$(`#${p}Model`).addEventListener("input",updateEvidenceChecklist);syncProvider(p,true)});
+$$(".load-models").forEach(btn=>btn.onclick=async()=>{const p=btn.closest(".provider-card").dataset.prefix;btn.disabled=true;btn.textContent="读取中…";try{const cfg=providerConfig(p);if(!cfg.model)cfg.model="model-list-placeholder";const r=await api("/api/providers/models",{method:"POST",body:JSON.stringify({provider:cfg})});const list=r.models||[];$(`#${p}ModelList`).innerHTML=list.map(m=>`<option value="${esc(m)}"></option>`).join("");if(!$(`#${p}Model`).value&&list.length)$(`#${p}Model`).value=list[0];toast(list.length?`读取到 ${list.length} 个模型`:"接口未返回模型列表，请手动填写模型 ID")}catch(e){alert(`读取失败：${e.message}\n\n该平台可能不开放模型列表接口，可直接手动填写模型 ID。`)}finally{btn.disabled=false;btn.textContent="读取模型列表"}});
+
+$("#detectOllama").onclick=async()=>{
+  const btn=$("#detectOllama"),out=$("#ollamaResult");
+  btn.disabled=true;btn.textContent="检测中…";out.textContent="";
+  try{
+    const cfg={provider:"ollama",model:"placeholder",api_key:"",base_url:"http://localhost:11434/v1",max_output_tokens:1800,temperature:.2,label:""};
+    const r=await api("/api/providers/models",{method:"POST",body:JSON.stringify({provider:cfg})});
+    const models=r.models||[];
+    if(models.length<2)throw new Error(`仅检测到 ${models.length} 个模型，至少需要两个不同模型`);
+    ["a","b"].forEach((p,i)=>{$(`#${p}Provider`).value="ollama";syncProvider(p,true);$(`#${p}Model`).value=models[i];$(`#${p}Label`).value=i===0?"Local Baseline":"Local Candidate"});
+    out.textContent=`已填入：${models[0]} vs ${models[1]}`;
+    updateEvidenceChecklist();toast("已连接两个本地模型");
+  }catch(e){out.textContent=`未完成：${e.message}`;alert("请先安装并启动 Ollama，再至少拉取两个模型。\\n\\n"+e.message)}
+  finally{btn.disabled=false;btn.textContent="检测并填入本地模型"}
+};
+$$("nav button").forEach(b=>b.onclick=()=>switchPage(b.dataset.page));$$("[data-jump]").forEach(b=>b.onclick=()=>switchPage(b.dataset.jump));
+function switchPage(id){$$(".page").forEach(p=>p.classList.toggle("active",p.id===id));$$("nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));if(id==="tasks")renderTasks();if(id==="run")renderSelection();if(id==="results")loadRuns();window.scrollTo({top:0,behavior:"smooth"})}
+async function api(path,options={}){const r=await fetch(path,{headers:{"Content-Type":"application/json",...(options.headers||{})},...options});const text=await r.text();let data;try{data=JSON.parse(text)}catch{data=text}if(!r.ok)throw new Error(data.detail||text||`HTTP ${r.status}`);return data}
+function toast(m){const e=$("#toast");e.textContent=m;e.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>e.classList.remove("show"),1900)}
+async function loadTasks(){tasks=await api("/api/tasks");if(!selectedIds.size)tasks.forEach(t=>selectedIds.add(t.id));renderTasks();renderSelection()}
+function renderTasks(){$("#taskBody").innerHTML=tasks.map(t=>`<tr><td><input type="checkbox" data-select="${t.id}" ${selectedIds.has(t.id)?"checked":""}></td><td><strong>${esc(t.name)}</strong><div class="sub">${esc(t.expected)}</div></td><td>${esc(t.task_type)}</td><td>${t.difficulty}</td><td>${t.test_code?'<span class="status">有</span>':'<span class="status warn">无</span>'}</td><td>${t.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</td><td><button class="btn small danger" data-delete="${t.id}">删除</button></td></tr>`).join("");$$("[data-select]").forEach(x=>x.onchange=()=>{x.checked?selectedIds.add(x.dataset.select):selectedIds.delete(x.dataset.select);renderSelection()});$$("[data-delete]").forEach(x=>x.onclick=async()=>{if(confirm("确认删除任务？")){await api(`/api/tasks/${x.dataset.delete}`,{method:"DELETE"});selectedIds.delete(x.dataset.delete);await loadTasks();toast("任务已删除")}})}
+function renderSelection(){
+  $("#selectionSummary").innerHTML=`已选择 <strong>${selectedIds.size}</strong> / ${tasks.length} 个任务。${[...new Set(tasks.filter(t=>selectedIds.has(t.id)).map(t=>t.task_type))].join("、")||"未选择任务"}`;
+  updateEvidenceChecklist()
+}
+function evidenceConditions(){
+  const a=providerConfig("a"),b=providerConfig("b"),repeat=Number($("#repeatCount")?.value||3),mode=$("#executionMode")?.value||"disabled";
+  return{
+    real:a.provider!=="mock"&&b.provider!=="mock",
+    different:`${a.provider}|${a.model}`!==`${b.provider}|${b.model}`&&!!a.model&&!!b.model,
+    execution:mode!=="disabled",
+    repeat:repeat>=3,
+    tasks:selectedIds.size>=3
+  }
+}
+function updateEvidenceChecklist(){
+  const box=$("#evidenceChecklist");if(!box)return;
+  const c=evidenceConditions(),items=[["real","A/B均为真实模型"],["different","A/B模型配置不同"],["execution","启用自动代码测试"],["tasks","至少选择3个任务"],["repeat","每任务至少重复3次"]];
+  const ok=Object.values(c).every(Boolean);
+  box.innerHTML=`<strong>${ok?"已达到可复核评测配置":"仍缺少证据条件"}</strong><br>${items.map(([k,n])=>`${c[k]?"✅":"❌"} ${n}`).join("　")}`;
+  box.style.borderColor=ok?"#a7f3d0":"#fed7aa";box.style.background=ok?"#ecfdf5":"#fff7ed"
+}
+$("#judgeEnabled").onchange=e=>$("#judgeWrap").style.display=e.target.checked?"block":"none";$("#executionMode").onchange=updateEvidenceChecklist;$("#repeatCount").onchange=updateEvidenceChecklist;$("#repairAttempts").onchange=updateEvidenceChecklist;
+$$(".test-provider").forEach(btn=>btn.onclick=async()=>{const p=btn.closest(".provider-card").dataset.prefix;btn.disabled=true;btn.textContent="测试中…";try{const r=await api("/api/providers/test",{method:"POST",body:JSON.stringify({provider:providerConfig(p)})});toast(`连接成功 · ${r.latency_ms} ms`)}catch(e){alert(`连接失败：${e.message}`)}finally{btn.disabled=false;btn.textContent="测试连接"}});
+$("#healthBtn").onclick=async()=>{try{const h=await api("/api/health");alert(`后端正常\n版本：${h.version}\nPython：${h.python}\nDocker：${h.docker_available?"可用":"未检测到"}`)}catch(e){alert(e.message)}};
+$("#addTaskBtn").onclick=()=>$("#taskModal").classList.add("show");$$("[data-close]").forEach(b=>b.onclick=()=>$("#"+b.dataset.close).classList.remove("show"));
+$("#createTaskBtn").onclick=async()=>{const payload={name:$("#tName").value.trim(),task_type:$("#tType").value,difficulty:$("#tDifficulty").value,language:"python",prompt:$("#tPrompt").value.trim(),expected:$("#tExpected").value.trim(),required_terms:$("#tTerms").value.split(/[,，]/).map(x=>x.trim()).filter(Boolean),test_code:$("#tTests").value,tags:$("#tTags").value.split(/[,，]/).map(x=>x.trim()).filter(Boolean),timeout_seconds:8};if(!payload.name||!payload.prompt){toast("请填写任务名称和需求");return}const t=await api("/api/tasks",{method:"POST",body:JSON.stringify(payload)});selectedIds.add(t.id);$("#taskModal").classList.remove("show");await loadTasks();toast("任务已创建")};
+$("#startRunBtn").onclick=async()=>{if(!selectedIds.size){toast("至少选择一个任务");return}const credible=Object.values(evidenceConditions()).every(Boolean);if(!credible&&!confirm("当前配置只能形成流程演示或初步评测，仍要继续吗？"))return;const req={name:$("#runName").value,agent_a:providerConfig("a"),agent_b:providerConfig("b"),judge:$("#judgeEnabled").checked?providerConfig("j"):null,task_ids:[...selectedIds],execution_mode:$("#executionMode").value,parallelism:Number($("#parallelism").value),repeat_count:Number($("#repeatCount").value),repair_attempts:Number($("#repairAttempts").value),weights:{completion:.2,correctness:.25,instruction:.15,intervention:.1,efficiency:.1,usability:.2}};$("#startRunBtn").disabled=true;try{const r=await api("/api/runs",{method:"POST",body:JSON.stringify(req)});currentRunId=r.run_id;$("#runStatus").textContent="运行中";$("#runStatus").className="status warn";pollRun()}catch(e){alert(e.message);$("#startRunBtn").disabled=false}};
+async function pollRun(){clearTimeout(pollTimer);try{const r=await api(`/api/runs/${currentRunId}`);const done=r.completed_units??r.completed_tasks??0,total=r.total_units??r.total_tasks??0;$("#progressText").textContent=`${done} / ${total} 次任务重复`;$("#progressBar").style.width=`${total?done/total*100:0}%`;$("#runStatus").textContent=r.status;if(r.status==="completed"){$("#runStatus").className="status";$("#startRunBtn").disabled=false;toast("真实评测已完成");switchPage("results");return}if(r.status==="failed"){$("#runStatus").className="status bad";$("#runError").style.display="block";$("#runError").textContent=r.error||"评测失败";$("#startRunBtn").disabled=false;return}pollTimer=setTimeout(pollRun,1200)}catch(e){$("#runError").style.display="block";$("#runError").textContent=e.message;$("#startRunBtn").disabled=false}}
+async function loadRuns(){const runs=await api("/api/runs");$("#runSelect").innerHTML=runs.map(r=>`<option value="${r.id}">${esc(r.name)} · ${r.status}</option>`).join("");if(currentRunId&&runs.some(r=>r.id===currentRunId))$("#runSelect").value=currentRunId;else currentRunId=$("#runSelect").value||"";if(currentRunId)loadRun(currentRunId);else clearResults()}
+$("#runSelect").onchange=e=>{currentRunId=e.target.value;loadRun(currentRunId)};$("#refreshRuns").onclick=loadRuns;
+async function loadRun(id){const r=await api(`/api/runs/${id}`);currentRun=r;if(r.status!=="completed"){clearResults();$("#reportText").textContent=`评测状态：${r.status}`;return}const s=r.summary;$("#avgA").textContent=`${s.average_a} ± ${s.std_a||0}`;$("#avgB").textContent=`${s.average_b} ± ${s.std_b||0}`;$("#avgDelta").textContent=(s.delta>=0?"+":"")+s.delta;const pa=s.test_case_pass_rate_a==null?"未执行":(s.test_case_pass_rate_a*100).toFixed(1)+"%";const pb=s.test_case_pass_rate_b==null?"未执行":(s.test_case_pass_rate_b*100).toFixed(1)+"%";$("#labelA").textContent=`${r.agent_a.label||r.agent_a.model} (${r.agent_a.model}) · 用例通过率 ${pa}`;$("#labelB").textContent=`${r.agent_b.label||r.agent_b.model} (${r.agent_b.model}) · 用例通过率 ${pb}`;$("#evidenceLevel").textContent=r.evidence?.level||"未知";$("#advice").textContent=r.evidence?.note||"";$("#resultList").innerHTML=r.results.map((x,i)=>resultHtml(x,i)).join("");$("#reportText").textContent=await fetch(`/api/runs/${id}/report`).then(x=>x.text())}
+function resultHtml(x,i){
+  if(x.error)return`<div class="result-card"><strong>${esc(x.task.name)}</strong><div class="notice" style="margin-top:10px;color:#991b1b">${esc(x.error)}</div></div>`;
+  const a=x.agent_a,b=x.agent_b,pr=v=>v==null?"不可计算":(v*100).toFixed(1)+"%";
+  const rows=(b.trials||[]).map((t,n)=>{const e=t.execution,d=e.diagnostics||{};return`<div class="sub">第 ${n+1} 次：测试 ${e.tests_passed||0}/${e.tests_run||0}，状态 ${esc(e.status)}，辅助分 ${t.overall_score}，总时延 ${t.usage.latency_ms} ms，加载 ${t.usage.load_duration_ms||0} ms${d.repeated_output?"，重复输出":""}${d.likely_truncated?"，疑似截断":""}</div>`}).join("");
+  return`<div class="result-card"><div class="result-head"><div><strong>${esc(x.task.name)}</strong><div class="sub">${esc(x.task.task_type)} · ${x.task.difficulty} · 重复 ${(b.trials||[]).length} 次</div></div><span class="status ${x.objective_delta==null?"warn":x.objective_delta<0?"bad":x.objective_delta>0?"":"warn"}">客观 ${x.objective_delta==null?"不可比较":((x.objective_delta*100)>=0?"+":"")+(x.objective_delta*100).toFixed(1)+"pp"}</span></div><div class="notice" style="margin-top:10px"><strong>客观结果：</strong>A 用例通过率 ${pr(a.test_case_pass_rate)}；B 用例通过率 ${pr(b.test_case_pass_rate)}。<br><strong>辅助分：</strong>A ${a.overall_score}±${a.score_std}；B ${b.overall_score}±${b.score_std}。</div><div class="scores">${scoreCells(b.evaluation.scores)}</div><div style="margin-top:8px">${(b.evaluation.failure_types||[]).map(f=>`<span class="tag">${esc(f)}</span>`).join("")}</div><details><summary>查看重复结果、代表输出与测试日志</summary>${rows}<h4>Agent A代表输出</h4><div class="code">${esc(a.output)}</div><h4>Agent B代表输出</h4><div class="code">${esc(b.output)}</div><h4>Agent B聚合结论</h4><div class="notice">${esc(b.evaluation.summary||"")}</div></details></div>`
+}
+function scoreCells(s){const n={completion:"完成度",correctness:"正确性",instruction:"遵循",intervention:"少干预",efficiency:"效率",usability:"可用性"};return Object.keys(n).map(k=>`<div class="score"><span>${n[k]}</span><strong>${s[k]}</strong></div>`).join("")}
+function testStatus(e){if(e.status==="aggregate"&&e.pass_rate!=null)return`<span class="status ${e.pass_rate<1?"warn":""}">${(e.pass_rate*100).toFixed(0)}%</span>`;if(e.passed===true)return'<span class="status">通过</span>';if(e.passed===false)return'<span class="status bad">失败</span>';return`<span class="status warn">${esc(e.status)}</span>`}
+function clearResults(){["avgA","avgB","avgDelta","evidenceLevel","advice"].forEach(id=>$("#"+id).textContent="—");$("#resultList").innerHTML="";$("#reportText").textContent="暂无已完成评测。"}
+$("#downloadReport").onclick=async()=>{if(!currentRunId){toast("暂无报告");return}const t=await fetch(`/api/runs/${currentRunId}/report`).then(r=>r.text());const blob=new Blob([t],{type:"text/markdown;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="EvalPilot_Real_Evaluation_Report.md";a.click();URL.revokeObjectURL(a.href)}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+loadTasks().catch(e=>alert(`无法连接后端：${e.message}`));
+</script>
+</body></html>
